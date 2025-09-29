@@ -25,4 +25,12 @@ done
 
 # Remove duplicates
 unique_packages=($(printf '%s\n' "${changed_packages[@]}" | sort -u))
-echo "${unique_packages[@]}"
+
+# Format as -p flags for the platform command
+package_flags=""
+for package in "${unique_packages[@]}"; do
+  package_flags="$package_flags -p $package"
+done
+
+# Output the formatted flags (trim leading space)
+echo "${package_flags# }"

@@ -28,8 +28,8 @@ runs:
       id: changed-packages
       shell: bash
       run: |
-        changed_packages=$(${{ github.action_path }}/find_changed_packages.sh "${{ steps.changed-files.outputs.all_changed_files }}")
-        echo "changed_packages=$changed_packages" >> $GITHUB_OUTPUT
+        package_flags=$(${{ github.action_path }}/find_changed_packages.sh "${{ steps.changed-files.outputs.all_changed_files }}")
+        echo "package_flags=$package_flags" >> $GITHUB_OUTPUT
 
     - name: Build Docker Container
       shell: bash
@@ -40,7 +40,7 @@ runs:
       run: docker compose build
 
     - name: Run Tests
-      if: ${{ steps.changed-packages.outputs.changed_packages != '' }}
+      if: ${{ steps.changed-packages.outputs.package_flags != '' }}
       shell: bash
       env:
         API_TOKEN_GITHUB: ${{ inputs.token }}
@@ -48,12 +48,7 @@ runs:
         ROS_DISTRO: ${{ inputs.ros_distro }}
       run: |
         mkdir results && chmod a+w results
-        changed_packages="${{ steps.changed-packages.outputs.changed_packages }}"
-        package_flags=()
-        for package in $changed_packages; do
-          package_flags+=(-p "$package")
-        done
-        TEST_CMD="platform ros test --results-dir results --include-dependents ${package_flags[@]}"
+        TEST_CMD="platform ros test --results-dir results --include-dependents ${{ steps.changed-packages.outputs.package_flags }}"
         docker compose run tests bash --login -c "$TEST_CMD"
 
     - name: Publish Test Report
