@@ -10,6 +10,7 @@ inputs:
     required: true
   ros_distro:
     description: "The ROS2 distro to use"
+    default: "jazzy"
     required: false
   changed_only:
     description: "Only test changed packages instead of all packages"
