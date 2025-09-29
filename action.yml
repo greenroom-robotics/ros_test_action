@@ -11,7 +11,7 @@ inputs:
   ros_distro:
     description: "The ROS2 distro to use"
     required: false
-  only_test_changed:
+  changed_only:
     description: "Only test changed packages instead of all packages"
     required: false
     default: "false"
@@ -51,7 +51,7 @@ runs:
         ROS_DISTRO: ${{ inputs.ros_distro }}
       run: |
         mkdir results && chmod a+w results
-        if [[ "${{ inputs.only_test_changed }}" == "true" ]]; then
+        if [[ "${{ inputs.changed_only }}" == "true" ]]; then
           package_flags="${{ steps.changed-packages.outputs.package_flags }}"
           if [[ -n "$package_flags" ]]; then
             TEST_CMD="platform ros test --results-dir results --include-dependents $package_flags"
