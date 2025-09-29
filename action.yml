@@ -11,10 +11,6 @@ inputs:
   ros_distro:
     description: "The ROS2 distro to use"
     required: false
-  change_base:
-    description: "Base branch to compare changes against (used with changed_only)"
-    required: false
-    default: "main"
 
 runs:
   using: "composite"
@@ -32,7 +28,7 @@ runs:
       id: changed-packages
       shell: bash
       run: |
-        changed_packages=$(./find_changed_packages.sh "${{ steps.changed-files.outputs.all_changed_files }}")
+        changed_packages=$(${{ github.action_path }}/find_changed_packages.sh "${{ steps.changed-files.outputs.all_changed_files }}")
         echo "changed_packages=$changed_packages" >> $GITHUB_OUTPUT
 
     - name: Build Docker Container
@@ -44,6 +40,7 @@ runs:
       run: docker compose build
 
     - name: Run Tests
+      if: ${{ steps.changed-packages.outputs.changed_packages != '' }}
       shell: bash
       env:
         API_TOKEN_GITHUB: ${{ inputs.token }}
