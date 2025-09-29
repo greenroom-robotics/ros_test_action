@@ -11,6 +11,10 @@ inputs:
   ros_distro:
     description: "The ROS2 distro to use"
     required: false
+  only_test_changed:
+    description: "Only test changed packages instead of all packages"
+    required: false
+    default: "false"
 
 runs:
   using: "composite"
@@ -40,7 +44,6 @@ runs:
       run: docker compose build
 
     - name: Run Tests
-      if: ${{ steps.changed-packages.outputs.package_flags != '' }}
       shell: bash
       env:
         API_TOKEN_GITHUB: ${{ inputs.token }}
@@ -48,7 +51,17 @@ runs:
         ROS_DISTRO: ${{ inputs.ros_distro }}
       run: |
         mkdir results && chmod a+w results
-        TEST_CMD="platform ros test --results-dir results --include-dependents ${{ steps.changed-packages.outputs.package_flags }}"
+        if [[ "${{ inputs.only_test_changed }}" == "true" ]]; then
+          package_flags="${{ steps.changed-packages.outputs.package_flags }}"
+          if [[ -n "$package_flags" ]]; then
+            TEST_CMD="platform ros test --results-dir results --include-dependents $package_flags"
+          else
+            echo "No changed packages found, skipping tests"
+            exit 0
+          fi
+        else
+          TEST_CMD="platform ros test --results-dir results"
+        fi
         docker compose run tests bash --login -c "$TEST_CMD"
 
     - name: Publish Test Report
