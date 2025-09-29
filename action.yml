@@ -24,8 +24,16 @@ runs:
       with:
         lfs: true
 
-    # - name: Collect Workflow Telemetry
-    #   uses: Greenroom-Robotics/workflow-telemetry-action@main
+    - name: Get changed files
+      id: changed-files
+      uses: tj-actions/changed-files@v47
+
+    - name: Determine changed packages
+      id: changed-packages
+      shell: bash
+      run: |
+        changed_packages=$(./find_changed_packages.sh "${{ steps.changed-files.outputs.all_changed_files }}")
+        echo "changed_packages=$changed_packages" >> $GITHUB_OUTPUT
 
     - name: Build Docker Container
       shell: bash
@@ -43,7 +51,12 @@ runs:
         ROS_DISTRO: ${{ inputs.ros_distro }}
       run: |
         mkdir results && chmod a+w results
-        TEST_CMD="platform ros test --results-dir results --changed --change-base ${{ inputs.change_base }} --include-dependents"
+        changed_packages="${{ steps.changed-packages.outputs.changed_packages }}"
+        package_flags=()
+        for package in $changed_packages; do
+          package_flags+=(-p "$package")
+        done
+        TEST_CMD="platform ros test --results-dir results --include-dependents ${package_flags[@]}"
         docker compose run tests bash --login -c "$TEST_CMD"
 
     - name: Publish Test Report
