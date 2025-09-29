@@ -11,6 +11,10 @@ inputs:
   ros_distro:
     description: "The ROS2 distro to use"
     required: false
+  change_base:
+    description: "Base branch to compare changes against (used with changed_only)"
+    required: false
+    default: "main"
 
 runs:
   using: "composite"
@@ -39,7 +43,8 @@ runs:
         ROS_DISTRO: ${{ inputs.ros_distro }}
       run: |
         mkdir results && chmod a+w results
-        docker compose run tests
+        TEST_CMD="platform ros test --results-dir results --changed --change-base ${{ inputs.change_base }} --include-dependents"
+        docker compose run tests bash --login -c "$TEST_CMD"
 
     - name: Publish Test Report
       uses: Greenroom-Robotics/action-junit-report@main
