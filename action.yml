@@ -27,10 +27,12 @@ runs:
 
     - name: Get changed files
       id: changed-files
+      if : ${{ inputs.changed_only }} == 'true'
       uses: tj-actions/changed-files@v47
 
     - name: Determine changed packages
       id: changed-packages
+      if : ${{ inputs.changed_only }} == 'true'
       shell: bash
       run: |
         package_flags=$(${{ github.action_path }}/find_changed_packages.sh "${{ steps.changed-files.outputs.all_changed_files }}")
