@@ -11,6 +11,14 @@ inputs:
   ros_distro:
     description: "The ROS2 distro to use"
     required: false
+  gpu:
+    description: "Whether to build with GPU support (true/false)"
+    required: false
+    default: "false"
+  tests:
+    description: "Whether to run tests (true/false)"
+    required: false
+    default: "true"
 
 runs:
   using: "composite"
@@ -27,15 +35,16 @@ runs:
       shell: bash
       env:
         API_TOKEN_GITHUB: ${{ inputs.token }}
-        GPU: "false"
+        GPU: ${{ inputs.gpu }}
         ROS_DISTRO: ${{ inputs.ros_distro }}
       run: docker compose build
 
     - name: Run Tests
+      if: ${{ inputs.tests == 'true' }}
       shell: bash
       env:
         API_TOKEN_GITHUB: ${{ inputs.token }}
-        GPU: "false"
+        GPU: ${{ inputs.gpu }}
         ROS_DISTRO: ${{ inputs.ros_distro }}
       run: |
         mkdir results && chmod a+w results
@@ -43,7 +52,7 @@ runs:
 
     - name: Publish Test Report
       uses: Greenroom-Robotics/action-junit-report@main
-      if: always() # always run even if the previous step fails
+      if: ${{ always() && inputs.tests == 'true' }}
       with:
         check_name: 'Test Report'
         report_paths: 'results/*/*.xml'
