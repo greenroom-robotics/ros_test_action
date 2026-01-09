@@ -28,6 +28,13 @@ runs:
       with:
         lfs: true
 
+    # Added after flakiness notes on self-hosted runners (runs-on).
+    # More details in: https://github.com/actions/checkout/issues/270
+    - name: Fetching LFS Data
+      shell: bash
+      run: |
+        git lfs pull --exclude=""
+
     # - name: Collect Workflow Telemetry
     #   uses: Greenroom-Robotics/workflow-telemetry-action@main
 
