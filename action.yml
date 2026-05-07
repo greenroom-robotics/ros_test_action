@@ -90,8 +90,10 @@ runs:
         fi
 
     - name: Publish Test Report
-      uses: Greenroom-Robotics/action-junit-report@main
-      if: ${{ always() && inputs.tests == 'true' }}
+      uses: dorny/test-reporter@v3
+      if: ${{ always() && inputs.tests == 'true' && hashFiles('results/**/*.xml') != '' }}
       with:
-        check_name: 'Test Report'
-        report_paths: 'results/*/*.xml'
+        name: Test Report
+        path: 'results/**/*.xml'
+        reporter: java-junit
+        fail-on-error: false
