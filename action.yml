@@ -24,7 +24,7 @@ runs:
   using: "composite"
   steps:
     - name: Checkout this repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v6
       with:
         lfs: true
 
@@ -58,8 +58,10 @@ runs:
         docker compose run tests
 
     - name: Publish Test Report
-      uses: Greenroom-Robotics/action-junit-report@main
-      if: ${{ always() && inputs.tests == 'true' }}
+      uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 #v3
+      if: ${{ always() && inputs.tests == 'true' && hashFiles('results/**/*.xml') != '' }}
       with:
-        check_name: 'Test Report'
-        report_paths: 'results/*/*.xml'
+        name: Test Report
+        path: 'results/**/*.xml'
+        reporter: java-junit
+        fail-on-error: false
