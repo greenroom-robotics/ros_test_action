@@ -58,8 +58,16 @@ runs:
       run: |
         mkdir -p results && chmod a+w results
         if [ -n "$PACKAGES" ]; then
-          docker compose run --rm --entrypoint bash tests -lc \
-            "platform ros test --results-dir results -- --packages-select ${PACKAGES}"
+          # Loop per-package: `platform ros test --package <pkg>` engages
+          # platform_cli's --package handling, which scopes --packages-select
+          # to `colcon test` only. Passing --packages-select via raw args
+          # (after `--`) leaks it into `colcon test-result`, which rejects it.
+          status=0
+          for pkg in $PACKAGES; do
+            docker compose run --rm --entrypoint bash tests -lc \
+              "platform ros test --results-dir results --package $pkg" || status=$?
+          done
+          exit $status
         else
           docker compose run tests
         fi
