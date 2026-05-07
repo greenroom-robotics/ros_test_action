@@ -1,5 +1,5 @@
 name: "ROS2 Test Action"
-description: "Runs Greenroom's standard ROS2 test setup"
+description: "Runs Greenroom's standard ROS2 test setup. Supports selective testing by package name."
 author: "Greenroom Robotics"
 branding:
   icon: "package"
@@ -19,6 +19,10 @@ inputs:
     description: "Whether to run tests (true/false)"
     required: false
     default: "true"
+  packages:
+    description: "Space-separated list of ROS package names to test. Empty = whole workspace."
+    required: false
+    default: ""
 
 runs:
   using: "composite"
@@ -35,9 +39,6 @@ runs:
       run: |
         git lfs pull --exclude=""
 
-    # - name: Collect Workflow Telemetry
-    #   uses: Greenroom-Robotics/workflow-telemetry-action@main
-
     - name: Build Docker Container
       shell: bash
       env:
@@ -53,9 +54,32 @@ runs:
         API_TOKEN_GITHUB: ${{ inputs.token }}
         GPU: ${{ inputs.gpu }}
         ROS_DISTRO: ${{ inputs.ros_distro }}
+        PACKAGES: ${{ inputs.packages }}
       run: |
-        mkdir results && chmod a+w results
-        docker compose run tests
+        mkdir -p results && chmod a+w results
+        if [ -n "$PACKAGES" ]; then
+          docker compose run --rm --entrypoint bash tests -lc \
+            "platform ros test --results-dir results -- --packages-select ${PACKAGES}"
+        else
+          docker compose run tests
+        fi
+
+    - name: Collect xunit XML for selective runs
+      if: ${{ always() && inputs.tests == 'true' && inputs.packages != '' }}
+      shell: bash
+      run: |
+        # When --package isn't passed to `platform ros test`, collect_xunit_xmls
+        # is skipped, so hoist xunit XML out of the colcon build/test_results dirs.
+        cid=$(docker compose ps -aq tests | head -n1 || true)
+        if [ -n "$cid" ]; then
+          docker cp "$cid:/home/ros/platform_control/build" ./_build_artifacts || true
+          find ./_build_artifacts -path '*/test_results/*.xml' -print0 \
+            | while IFS= read -r -d '' f; do
+                pkg=$(basename "$(dirname "$(dirname "$f")")")
+                mkdir -p "results/$pkg"
+                cp "$f" "results/$pkg/"
+              done
+        fi
 
     - name: Publish Test Report
       uses: Greenroom-Robotics/action-junit-report@main
