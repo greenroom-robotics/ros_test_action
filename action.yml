@@ -19,6 +19,10 @@ inputs:
     description: "Whether to run tests (true/false)"
     required: false
     default: "true"
+  submodules:
+    description: "Checkout git submodules: 'false', 'true', or 'recursive'"
+    required: false
+    default: "false"
 
 runs:
   using: "composite"
@@ -27,6 +31,10 @@ runs:
       uses: actions/checkout@v6
       with:
         lfs: true
+        # Opt-in via the `submodules` input. The token lets checkout fetch
+        # private submodules (it rewrites git@github.com URLs to token HTTPS).
+        submodules: ${{ inputs.submodules }}
+        token: ${{ inputs.token }}
 
     # Added after flakiness notes on self-hosted runners (runs-on).
     # More details in: https://github.com/actions/checkout/issues/270
