@@ -45,7 +45,16 @@ runs:
         API_TOKEN_GITHUB: ${{ inputs.token }}
         GPU: ${{ inputs.gpu }}
         ROS_DISTRO: ${{ inputs.ros_distro }}
-      run: docker compose build
+        PACKAGES: ${{ inputs.packages }}
+      run: |
+        # Scope the in-image colcon build to the changed packages. compose forwards
+        # PLATFORM_BUILD_ARGS into the Dockerfile's `colcon build`. --packages-up-to
+        # also builds the changed packages' in-workspace source deps, which aren't
+        # installed as binaries. Empty PACKAGES = whole workspace.
+        if [ -n "$PACKAGES" ]; then
+          export PLATFORM_BUILD_ARGS="--packages-up-to $PACKAGES"
+        fi
+        docker compose build
 
     - name: Run Tests
       if: ${{ inputs.tests == 'true' }}
