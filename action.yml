@@ -23,6 +23,10 @@ inputs:
     description: "Checkout git submodules: 'false', 'true', or 'recursive'"
     required: false
     default: "false"
+  test_timeout:
+    description: "Time limit for the test step, e.g. '45m' (empty = no limit). A hung test then fails the job instead of holding the runner until the job is cancelled."
+    required: false
+    default: ""
 
 runs:
   using: "composite"
@@ -61,9 +65,18 @@ runs:
         API_TOKEN_GITHUB: ${{ inputs.token }}
         GPU: ${{ inputs.gpu }}
         ROS_DISTRO: ${{ inputs.ros_distro }}
+        TEST_TIMEOUT: ${{ inputs.test_timeout }}
       run: |
         mkdir results && chmod a+w results
-        docker compose run tests
+        # Name the container so it can be removed even if the step times out or is cancelled:
+        # on self-hosted runners it would otherwise keep running after the job ends.
+        name="ros-test-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-$$"
+        trap 'docker rm -f "$name" >/dev/null 2>&1 || true' EXIT
+        if [ -n "$TEST_TIMEOUT" ]; then
+          timeout --kill-after=1m "$TEST_TIMEOUT" docker compose run --rm --name "$name" tests
+        else
+          docker compose run --rm --name "$name" tests
+        fi
 
     - name: Publish Test Report
       uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 #v3
