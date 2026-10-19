@@ -24,7 +24,7 @@ inputs:
     required: false
     default: "false"
   test_timeout:
-    description: "Time limit for the test step, e.g. '45m' (empty = no limit). A hung test then fails the job instead of holding the runner until the job is cancelled."
+    description: "Time limit for the test step, e.g. '60m'. Empty means no limit."
     required: false
     default: ""
 
@@ -68,7 +68,7 @@ runs:
         TEST_TIMEOUT: ${{ inputs.test_timeout }}
       run: |
         mkdir results && chmod a+w results
-        # Name the container so it can be removed even if the step times out or is cancelled:
+        # Named, so it's removed even after a timeout or cancel
         name="ros-test-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-$$"
         trap 'docker rm -f "$name" >/dev/null 2>&1 || true' EXIT
         if [ -n "$TEST_TIMEOUT" ]; then
