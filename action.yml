@@ -69,7 +69,6 @@ runs:
       run: |
         mkdir results && chmod a+w results
         # Name the container so it can be removed even if the step times out or is cancelled:
-        # on self-hosted runners it would otherwise keep running after the job ends.
         name="ros-test-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-$$"
         trap 'docker rm -f "$name" >/dev/null 2>&1 || true' EXIT
         if [ -n "$TEST_TIMEOUT" ]; then
